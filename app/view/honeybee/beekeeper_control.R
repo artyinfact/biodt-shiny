@@ -44,7 +44,7 @@ beekeeper_control_ui <- function(id, i18n) {
       id = ns("control"),
       tags$div(
         class = "row d-flex justify-content-between card-list",
-        tags$h5("Instructions"),
+        tags$h5(i18n$translate("Instructions")),
         tags$ol(
           tags$style("
             .card-list ol li {
@@ -57,7 +57,7 @@ beekeeper_control_ui <- function(id, i18n) {
           tags$li(i18n$translate("Change the lookup table values if needed")),
           tags$li(i18n$translate("Click the run simulation button"))
         ),
-        tags$p("The simulation results can be seen in the output plot, select your experiment from the dropdown menu.")
+        tags$p(i18n$t("The simulation results can be seen in the output plot, select your experiment from the dropdown menu."))
       )
     )
   )

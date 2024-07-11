@@ -16,7 +16,6 @@ box::use(
 beekeeper_plot_ui <- function(
     id,
     i18n,
-    card_header = "Output plot",
     title = "output_plot",
     plot_width = "100%",
     plot_height = "500px"
@@ -30,7 +29,7 @@ beekeeper_plot_ui <- function(
       title = title,
       full_screen = TRUE,
       card_header(
-        tags$h5(card_header)
+        tags$h5(i18n$t("Output plot"))
       ),
       tags$div(
         class = "row",
@@ -38,7 +37,7 @@ beekeeper_plot_ui <- function(
           class = "col-10",
           selectInput(
             ns("experiment"),
-            label = "Choose experiment:",
+            label = i18n$t("Choose experiment:"),
             choices = c(Example = "app/data/honeybee/output_example/Result_table_original.csv")
           ),
           # style = "max-width: 200px"
@@ -48,7 +47,7 @@ beekeeper_plot_ui <- function(
           downloadButton(
             class = "",
             ns("download_data"),
-            label = "Download plot data",
+            label = i18n$t("Download plot data"),
             # style = "max-width: 200px"
           )
         )

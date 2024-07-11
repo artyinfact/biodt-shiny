@@ -13,7 +13,7 @@ honeybee_map_ui <- function(id, i18n) {
       title = "input_map",
       id = ns("input_map"),
       full_screen = TRUE,
-      card_header(tags$h5("Input Map"),),
+      card_header(tags$h5(i18n$t("Input Map"))),
       card_body(
         id = ns("map_input_card"),
         tags$div(
@@ -21,14 +21,14 @@ honeybee_map_ui <- function(id, i18n) {
           tags$div(
             class = "col-lg-6 col-sm-12",
             tags$p(
-              tags$b("Click the"),
+              tags$b(i18n$t("Click the")),
               shiny::icon("location-dot"),
-              tags$b("icon"),
-              "and",
-              tags$b("select"),
-              "desired placement on the map."
+              tags$b(i18n$t("icon")),
+              i18n$t("and"),
+              tags$b(i18n$t("select")),
+              i18n$t("desired placement on the map.")
             ),
-            uiOutput(ns("map_coordinates"),),
+            uiOutput(ns("map_coordinates")),
           )
         ),
         leafletOutput(ns("map_plot"),

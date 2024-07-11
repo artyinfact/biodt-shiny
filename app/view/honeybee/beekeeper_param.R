@@ -14,12 +14,12 @@ honeybee_param_ui <- function(id, theme, i18n) {
       title = "params_simulation",
       full_screen = FALSE,
       card_header(
-        tags$h5("Simulation Parameters")
+        tags$h5(i18n$t("Simulation Parameters"))
       ),
       card_body(
         sliderInput(
           ns("N_INITIAL_BEES"),
-          label = "Number of adult bees at the beginning of the simulation",
+          label = i18n$t("Number of adult bees at the beginning of the simulation"),
           min = 0,
           max = 30000,
           value = 10000,
@@ -27,7 +27,7 @@ honeybee_param_ui <- function(id, theme, i18n) {
         ),
         sliderInput(
           ns("N_INITIAL_MITES_HEALTHY"),
-          label = "Number of Mites at the beginning of the simulation",
+          label = i18n$t("Number of Mites at the beginning of the simulation"),
           value = 100,
           min = 0,
           max = 100,
@@ -35,7 +35,7 @@ honeybee_param_ui <- function(id, theme, i18n) {
         ),
         sliderInput(
           ns("N_INITIAL_MITES_INFECTED"),
-          label = "Number of infected Mites at the beginning of the simulation",
+          label = i18n$t("Number of infected Mites at the beginning of the simulation"),
           value = 50,
           min = 0,
           max = 100,
@@ -43,24 +43,24 @@ honeybee_param_ui <- function(id, theme, i18n) {
         ),
         checkboxInput(
           ns("HoneyHarvesting"),
-          label = "Honey Harvest",
+          label = i18n$t("Honey Harvest"),
           value = TRUE
         ),
         checkboxInput(
           ns("VarroaTreatment"),
-          label = "Varroa treatment with arcaricide",
+          label = i18n$t("Varroa treatment with arcaricide"),
           value = FALSE
         ),
         checkboxInput(
           ns("DroneBroodRemoval"),
-          label = "Drone Brood Removal",
+          label = i18n$t("Drone Brood Removal"),
           value = TRUE
         ),
         div(
           class = "no-minor-ticks",
           sliderInput(
             ns("SimulationYearStart"),
-            label = "Choose start year of the simulation:",
+            label = i18n$t("Choose start year of the simulation:"),
             value = 2016L,
             min = 2016L,
             #ticks = FALSE,
@@ -70,7 +70,7 @@ honeybee_param_ui <- function(id, theme, i18n) {
         ),
         sliderInput(
           ns("DaysLimit"),
-          label = "For how many days:",
+          label = i18n$t("For how many days:"),
           value = 365,
           min = 365,
           max = as.integer((Sys.Date() - 31) - as.Date("2016-01-01")),
