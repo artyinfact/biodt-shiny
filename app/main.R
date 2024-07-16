@@ -218,7 +218,8 @@ server <- function(id) {
     # Honeybee pDT ----
     honeybee_server(
       "honeybee_main",
-      session_dir
+      session_dir,
+      i18n = i18n
     )
     # Grassland pDT ----
     # grassland_main_server("grassland_main")
