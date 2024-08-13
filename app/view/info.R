@@ -1,5 +1,6 @@
 box::use(shiny[NS, fillPage, div, p, moduleServer, tags, h1, fluidRow, observeEvent, actionLink],
-         bslib[card, card_header, card_body, bs_theme, nav_select], )
+         bslib[card, card_header, card_body, bs_theme, nav_select],
+         shinyjs[hide, show, toggleElement, toggle, removeCssClass, toggleClass, removeClass, delay, hideElement])
 
 box::use(app / view / honeybee / honeybee_main[honeybee_ui, honeybee_server], )
 
@@ -190,6 +191,9 @@ mod_info_server <- function(id, r, main_session) {
                    nav_select("honeybee_main-tab",
                               selected = "Beekeeper",
                               session = main_session)
+
+                   # removeCssClass(selector = ".dropdown-menu", class = "show")
+                   hideElement(selector = ".dropdown-menu")
                  })
     
     observeEvent(input$ces_selector,
