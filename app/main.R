@@ -21,7 +21,8 @@ box::use(
     disease_outbreaks_main_ui,
     disease_outbreaks_main_server
   ],
-  app/view/cwr/cwr_main[mod_cwr_server, mod_cwr_ui]
+  app/view/cwr/cwr_main[mod_cwr_server, mod_cwr_ui],
+  app/view/page404[page404_ui]
 )
 
 shiny$enableBookmarking("server")
@@ -101,7 +102,6 @@ ui <- function(id) {
         title = i18n$translate("Digital Twin"),
         align = "left",
         icon = shiny$icon("people-group", `aria-hidden` = "true"),
-        # if (env_active == "dev") {
           nav_item(
             ## Species response to environment - menu subitem ----
             shiny$tags$div(
@@ -110,25 +110,19 @@ ui <- function(id) {
               shiny$tags$strong(i18n$translate("Species response to environmental change"))
             )
           ),
-        # },
         if (env_active == "dev") {
           nav_panel(
             class = "p-0",
             title = i18n$translate("Grassland Dynamics"),
-            value = "Grassland",
-            shiny::a("grassland", href = route_link("grassland"))            
+            value = shiny::a("Grassland", href = route_link("grassland")),                     
           )
         },
-        # if (env_active == "dev") {
           nav_panel(
             class = "p-0",
             title = i18n$translate("Cultural Ecosystem Services"),
             value = "CES",
-            ces_ui(
-              ns("ces_main")
-            )
+            shiny::a("ces", href = route_link("ces"))
           ),
-        # },
         if (env_active == "dev") {
           nav_item(
             ## Species response to environment - menu subitem ----
@@ -164,11 +158,7 @@ ui <- function(id) {
           title = i18n$translate("Honeybee"),
           value = "Honeybee",
           class = "p-0",
-          honeybee_ui(
-            ns("honeybee_main"),
-            theme = biodt_theme,
-            i18n
-          )
+          shiny::a("honeybee", href = route_link("honeybee"))
         ),
         if (env_active == "dev") {
           nav_panel(
@@ -185,7 +175,7 @@ ui <- function(id) {
         value = "acknowledgements",
         icon = shiny$icon("users-gear", `aria-hidden` = "true"),
         class = "container-fluid index-info",
-        mod_acknowledgements_ui("info")
+        shiny::a("acknowledgements", href = route_link("acknowledgements"))        
       ),
       if (env_active == "dev") {
         nav_item(
@@ -211,6 +201,20 @@ ui <- function(id) {
           i18n
         )
       ),
+      route("ces", ces_ui(
+          ns("ces_main")
+        )
+      ),
+      route("honeybee", honeybee_ui(
+          ns("honeybee_main"),
+          theme = biodt_theme,
+          i18n
+        )
+      ),
+      route("acknowledgements",
+        mod_acknowledgements_ui("info")
+      ),
+      page_404 = page404_ui(ns("page404"))
     )
   )
 }
@@ -218,6 +222,8 @@ ui <- function(id) {
 #' @export
 server <- function(id) {
   shiny$moduleServer(id, function(input, output, session) {
+    router_server("/")
+
     ns <- session$ns
 
     base_path <- Sys.getenv("BASE_PATH")
