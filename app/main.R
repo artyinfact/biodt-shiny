@@ -8,6 +8,7 @@ box::use(
   htmltools[includeScript],
   config,
   shiny.i18n[Translator, usei18n, update_lang],
+  shiny.router[router_ui, router_server, route, route_link],
 )
 
 box::use(
@@ -93,7 +94,7 @@ ui <- function(id) {
         value = "info",
         icon = shiny$icon("circle-info", `aria-hidden` = "true"),
         class = "container-fluid index-info",
-        mod_info_ui(ns("info"), i18n)
+        shiny::a("Info", href = route_link("/"))
       ),
       ## Digital Twins - main menu item ----
       nav_menu(
@@ -115,10 +116,7 @@ ui <- function(id) {
             class = "p-0",
             title = i18n$translate("Grassland Dynamics"),
             value = "Grassland",
-            grassland_main_ui(
-              ns("grassland_main"),
-              i18n
-            )
+            shiny::a("grassland", href = route_link("grassland"))            
           )
         },
         # if (env_active == "dev") {
@@ -205,6 +203,14 @@ ui <- function(id) {
           )
         )
       }
+    ),
+    router_ui(
+      route("/", mod_info_ui(ns("info"), i18n)),
+      route("grassland", grassland_main_ui(
+          ns("grassland_main"),
+          i18n
+        )
+      ),
     )
   )
 }
