@@ -69,6 +69,58 @@ ui <- function(id) {
       color = "rgba(256,256,256,0.9)"
     ),
     includeScript("app/js/popover.js"),
+    shiny::a("Grassland", href = route_link("grassland")),
+    shiny::a("Acknowledgements", href = route_link("acknowledgements")),
+    bslib::nav(
+      class = "navbar navbar-default navbar-static-top",
+      role = "navigation",
+      shiny$tags$div(
+        class = "container-fluid",
+        shiny$tags$div(
+          class = "navbar-header",
+          shiny$actionLink(
+            inputId = ns("biodt_logo"),
+            shiny$img(
+              src = "static/logo.svg",
+              height = "70px",
+              style = "padding-right: 20px",
+              alt = "Biodiversity Digital Twin",
+            ),
+          ),
+        ),
+        shiny$tags$div(
+          class = "collapse navbar-collapse",
+          shiny$tags$ul(
+            class="navbar-nav me-auto mb-2 mb-lg-0",
+            shiny$tags$li(
+              class="nav-item dropdown",
+              shiny::a(
+                class="nav-link dropdown-toggle",
+                 href="#",
+                 role="button",
+                 data-bs-toggle="dropdown",
+                 aria-expanded="false",
+                "Digital Twin"
+              ),
+              shiny$tags$ul(
+                class="dropdown-menu",
+                shiny$tags$li(
+                  class="dropdown-item",
+                  shiny::a("Info", href = route_link("/")),
+                ),
+              ),
+              shiny$tags$ul(
+                class="dropdown-menu",
+                shiny$tags$li(
+                  class="dropdown-item",
+                  shiny::a("Ces", href = route_link("ces")),
+                ),
+              ),
+            )
+          )
+        )
+      )
+    ),
     # Body ----
     # Main navbar----
     page_navbar(
@@ -89,110 +141,102 @@ ui <- function(id) {
       # must be true
       collapsible = TRUE,
       fluid = TRUE,
-      ## Info - main menu item ----
-      nav_panel(
-        title = i18n$translate("Info"),
-        value = "info",
-        icon = shiny$icon("circle-info", `aria-hidden` = "true"),
-        class = "container-fluid index-info",
-        shiny::a("Info", href = route_link("/"))
-      ),
-      ## Digital Twins - main menu item ----
-      nav_menu(
-        title = i18n$translate("Digital Twin"),
-        align = "left",
-        icon = shiny$icon("people-group", `aria-hidden` = "true"),
-          nav_item(
-            ## Species response to environment - menu subitem ----
-            shiny$tags$div(
-              class = "p-2",
-              shiny$icon("temperature-arrow-up", `aria-hidden` = "true"),
-              shiny$tags$strong(i18n$translate("Species response to environmental change"))
-            )
-          ),
-        if (env_active == "dev") {
-          nav_panel(
-            class = "p-0",
-            title = i18n$translate("Grassland Dynamics"),
-            value = shiny::a("Grassland", href = route_link("grassland")),                     
-          )
-        },
-          nav_panel(
-            class = "p-0",
-            title = i18n$translate("Cultural Ecosystem Services"),
-            value = "CES",
-            shiny::a("ces", href = route_link("ces"))
-          ),
-        if (env_active == "dev") {
-          nav_item(
-            ## Species response to environment - menu subitem ----
-            shiny$tags$div(
-              class = "p-2",
-              shiny$icon("temperature-arrow-up"),
-              shiny$tags$strong(i18n$translate("Species response to environmental change"))
-            )
-          )
-        },
-        if (env_active == "dev") {
-          nav_panel(
-            class = "p-0",
-            title = i18n$translate("Crop wild relatives and genetic resources for food security"),
-            mod_cwr_ui(
-              ns("cwr_main"),
-              i18n
-            )
-          )
-        },
-        ## Species interactions (themselves, human) - menu subitem ----
-        nav_item(
-          shiny$div(
-            class = "p-2",
-            shiny$div(
-              shiny$icon("bugs", `aria-hidden` = "true"),
-              shiny$strong(i18n$translate("Species interactions with each other and with humans")),
-              style = "width: 450px"
-            ),
-          )
-        ),
-        nav_panel(
-          title = i18n$translate("Honeybee"),
-          value = "Honeybee",
-          class = "p-0",
-          shiny::a("honeybee", href = route_link("honeybee"))
-        ),
-        if (env_active == "dev") {
-          nav_panel(
-            title = i18n$translate("Disease Outbreaks"),
-            class = "p-0",
-            disease_outbreaks_main_ui(ns("disease_outbreaks_main"), i18n)
-          )
-        },
-      ),
-      nav_spacer(),
-      ## Acknowledgements - main menu item ----
-      nav_panel(
-        title = i18n$translate("Acknowledgements"),
-        value = "acknowledgements",
-        icon = shiny$icon("users-gear", `aria-hidden` = "true"),
-        class = "container-fluid index-info",
-        shiny::a("acknowledgements", href = route_link("acknowledgements"))        
-      ),
-      if (env_active == "dev") {
-        nav_item(
-          shiny$bookmarkButton()
-        )
-      },
-      if (env_active == "dev") {
-        nav_item(
-          shiny$selectInput(
-            ns("selected_language"),
-            shiny$span(), # shiny$p(i18n$translate("Language:")),
-            choices = i18n$get_languages(),
-            selected = i18n$get_key_translation(),
-            width = "75px"
-          )
-        )
-      }
+      # Digital Twins - main menu item ----
+       nav_menu(
+         title = i18n$translate("Digital Twin"),
+         align = "left",
+         icon = shiny$icon("people-group", `aria-hidden` = "true"),
+           nav_item(
+             ## Species response to environment - menu subitem ----
+             shiny$tags$div(
+               class = "p-2",
+               shiny$icon("temperature-arrow-up", `aria-hidden` = "true"),
+               shiny$tags$strong(i18n$translate("Species response to environmental change"))
+             )
+           ),
+         if (env_active == "dev") {
+           nav_panel(
+             class = "p-0",
+             title = i18n$translate("Grassland Dynamics"),
+             value = shiny::a("Grassland", href = route_link("grassland")),                     
+           )
+         },
+           nav_panel(
+             class = "p-0",
+             title = i18n$translate("Cultural Ecosystem Services"),
+             value = "CES",
+             shiny::a("ces", href = route_link("ces"))
+           ),
+         if (env_active == "dev") {
+           nav_item(
+             ## Species response to environment - menu subitem ----
+             shiny$tags$div(
+               class = "p-2",
+               shiny$icon("temperature-arrow-up"),
+               shiny$tags$strong(i18n$translate("Species response to environmental change"))
+             )
+           )
+         },
+         if (env_active == "dev") {
+           nav_panel(
+             class = "p-0",
+             title = i18n$translate("Crop wild relatives and genetic resources for food security"),
+             mod_cwr_ui(
+               ns("cwr_main"),
+               i18n
+             )
+           )
+         },
+         ## Species interactions (themselves, human) - menu subitem ----
+         nav_item(
+           shiny$div(
+             class = "p-2",
+             shiny$div(
+               shiny$icon("bugs", `aria-hidden` = "true"),
+               shiny$strong(i18n$translate("Species interactions with each other and with humans")),
+               style = "width: 450px"
+             ),
+           )
+         ),
+         nav_panel(
+           title = i18n$translate("Honeybee"),
+           value = "Honeybee",
+           class = "p-0",
+           shiny::a("honeybee", href = route_link("honeybee"))
+         ),
+         if (env_active == "dev") {
+           nav_panel(
+             title = i18n$translate("Disease Outbreaks"),
+             class = "p-0",
+             disease_outbreaks_main_ui(ns("disease_outbreaks_main"), i18n)
+           )
+         },
+       ),
+       nav_spacer(),
+       ## Acknowledgements - main menu item ----
+       nav_panel(
+         title = i18n$translate("Acknowledgements"),
+         value = "acknowledgements",
+         icon = shiny$icon("users-gear", `aria-hidden` = "true"),
+         class = "container-fluid index-info",
+         shiny::a("acknowledgements", href = route_link("acknowledgements"))        
+       ),
+       if (env_active == "dev") {
+         nav_item(
+           shiny$bookmarkButton()
+         )
+       },
+       if (env_active == "dev") {
+         nav_item(
+           shiny$selectInput(
+             ns("selected_language"),
+             shiny$span(), # shiny$p(i18n$translate("Language:")),
+             choices = i18n$get_languages(),
+             selected = i18n$get_key_translation(),
+             width = "75px"
+           )
+         )
+       }
     ),
     router_ui(
       route("/", mod_info_ui(ns("info"), i18n)),
