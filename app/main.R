@@ -93,7 +93,8 @@ ui <- function(id) {
             shiny$tags$li(
               class="nav-item dropdown",
               shiny::a(
-                "Digital Twin",
+                shiny$icon("people-group", `aria-hidden` = "true"),
+                shiny$tags$strong(i18n$translate("Digital Twin")),
                 class="nav-link dropdown-toggle",
                 href="#",
                 role="button",
@@ -102,21 +103,24 @@ ui <- function(id) {
               ),
               shiny$tags$ul(
                 class="dropdown-menu",
+                shiny$tags$div(
+                  class = "dropdown-item p-2",
+                  shiny$icon("temperature-arrow-up", `aria-hidden` = "true"),
+                  shiny$tags$strong(i18n$translate("Species response to environmental change"))
+                ),
+                if (env_active == "dev") {
+                  shiny$tags$li(
+                    class="dropdown-item",
+                    shiny::a(i18n$translate("Grassland"), href = route_link("grassland")),
+                  )
+                },
                 shiny$tags$li(
                   class="dropdown-item",
-                  shiny::a("Info", href = route_link("/")),
+                  shiny::a(i18n$translate("Cultural Ecosystem Services"), href = route_link("ces")),
                 ),
                 shiny$tags$li(
                   class="dropdown-item",
-                  shiny::a("Grassland", href = route_link("grassland")),
-                ),
-                shiny$tags$li(
-                  class="dropdown-item",
-                  shiny::a("Cultural Ecosystem Services", href = route_link("ces")),
-                ),
-                shiny$tags$li(
-                  class="dropdown-item",
-                  shiny::a("Honeybee", href = route_link("honeybee")),
+                  shiny::a(i18n$translate("Honeybee"), href = route_link("honeybee")),
                 ),
               ),
             )
@@ -128,6 +132,18 @@ ui <- function(id) {
               class="nav-item",
               shiny::a("Acknowledgements", class = "nav-link", href = route_link("acknowledgements")),
             ),
+            if (env_active == "dev") {                  
+             shiny$tags$li(
+              class="dropdown-item",
+              shiny$selectInput(
+                ns("selected_language"),
+                shiny$span(), # shiny$p(i18n$translate("Language:")),
+                choices = i18n$get_languages(),
+                selected = i18n$get_key_translation(),
+                width = "75px"
+                )
+              )
+            }
           ),
         )
       )

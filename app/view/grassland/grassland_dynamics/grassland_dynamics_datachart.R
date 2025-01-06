@@ -40,7 +40,7 @@ grassland_dynamics_datachart_server <- function(id) { # nolint
   moduleServer(id, function(input, output, session) {
     # Define waiter ----
     msg <- list(
-      waiter_text(message = tags$h3("Loading and processing data - PFT data from simulations...",
+      waiter_text(message = tags$h3("Loading...",
         style = "color: #414f2f;"
       ))
     )
