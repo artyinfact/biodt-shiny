@@ -69,7 +69,6 @@ ui <- function(id) {
       color = "rgba(256,256,256,0.9)"
     ),
     includeScript("app/js/popover.js"),
-    shiny::a("Grassland", href = route_link("grassland")),
     shiny::a("Acknowledgements", href = route_link("acknowledgements")),
     shiny$tags$nav(
       class = "navbar navbar-default navbar-static-top",
@@ -114,6 +113,13 @@ ui <- function(id) {
                   shiny::a("Ces", href = route_link("ces")),
                 ),
               ),
+              shiny$tags$ul(
+                class="dropdown-menu",
+                shiny$tags$li(
+                  class="dropdown-item",
+                  shiny::a("Grassland", href = route_link("grassland")),
+                ),
+              ),
             )
           )
         )
@@ -123,15 +129,6 @@ ui <- function(id) {
     # Main navbar----
     page_navbar(
       window_title = "BioDT",
-      title = shiny$actionLink(
-        inputId = ns("biodt_logo"),
-        shiny$img(
-          src = "static/logo.svg",
-          height = "70px",
-          style = "padding-right: 20px",
-          alt = "Biodiversity Digital Twin",
-        ),
-      ),
       id = ns("navbar"),
       theme = biodt_theme,
       bg = "#fff",
