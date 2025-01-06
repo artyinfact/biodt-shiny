@@ -96,9 +96,9 @@ ui <- function(id) {
               shiny::a(
                 shiny$icon("people-group", `aria-hidden` = "true"),
                 i18n$translate("Digital Twin"),
-                class="nav-link dropdown-toggle",
-                href="#",
-                role="button",
+                class = "nav-link dropdown-toggle",
+                href = route_link("/"),
+                role = "button",
                 'data-bs-toggle'="dropdown",
                 'aria-expanded'="false"
               ),
@@ -132,10 +132,21 @@ ui <- function(id) {
                     shiny::a(i18n$translate("Crop Wild Relatives"), href = route_link("cwr")),
                   )
                 },
+                shiny$tags$div(
+                  class = "dropdown-item p-2",
+                  shiny$icon("bugs", `aria-hidden` = "true"),
+                  shiny$tags$strong(i18n$translate("Species interactions with each other and with humans"))
+                ),
                 shiny$tags$li(
                   class="dropdown-item",
                   shiny::a(i18n$translate("Honeybee"), href = route_link("honeybee")),
                 ),
+                if (env_active == "dev") {
+                  shiny$tags$li(
+                    class="dropdown-item",
+                    shiny::a(i18n$translate("Disease Outbreaks"), href = route_link("disease_outbreaks")),
+                  )
+                },
               ),
             )
           ),
@@ -143,9 +154,13 @@ ui <- function(id) {
           shiny$tags$ul(
             class="navbar-nav mr-1 mb-2 mb-lg-0",
             shiny$tags$li(
-              class = "nav-item",
-              shiny$icon("users-gear", `aria-hidden` = "true"),
-              shiny::a("Acknowledgements", class = "nav-link", href = route_link("acknowledgements")),
+              class = "nav-item dropdown",
+              shiny::a(
+                shiny$icon("users-gear", `aria-hidden` = "true"),
+                i18n$translate("Acknowledgements"), 
+                class = "nav-link",
+                href = route_link("acknowledgements")
+              ),
             ),
             if (env_active == "dev") {                  
               shiny$tags$li(
@@ -295,6 +310,11 @@ ui <- function(id) {
       ),
       route("cwr", mod_cwr_ui(
           ns("cwr_main"),
+          i18n
+        )
+      ),
+      route("disease_outbreaks", disease_outbreaks_main_ui(
+          ns("disease_outbreaks_main"),
           i18n
         )
       ),
