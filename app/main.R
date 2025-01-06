@@ -71,7 +71,7 @@ ui <- function(id) {
     includeScript("app/js/popover.js"),
     shiny::a("Grassland", href = route_link("grassland")),
     shiny::a("Acknowledgements", href = route_link("acknowledgements")),
-    bslib::nav(
+    shiny$tags$nav(
       class = "navbar navbar-default navbar-static-top",
       role = "navigation",
       shiny$tags$div(
@@ -96,10 +96,8 @@ ui <- function(id) {
               class="nav-item dropdown",
               shiny::a(
                 class="nav-link dropdown-toggle",
-                 href="#",
-                 role="button",
-                 data-bs-toggle="dropdown",
-                 aria-expanded="false",
+                href="#",
+                role="button",
                 "Digital Twin"
               ),
               shiny$tags$ul(
