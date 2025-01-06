@@ -49,7 +49,6 @@ i18n$set_translation_language("en")
 ui <- function(id) {
   ns <- shiny$NS(id)
   page(
-  #shiny$bootstrapPage(
     theme = biodt_theme,
     # Head ----
     shiny$tags$head(
@@ -69,6 +68,7 @@ ui <- function(id) {
       color = "rgba(256,256,256,0.9)"
     ),
     includeScript("app/js/popover.js"),
+    # Main navigation ----
     shiny$tags$nav(
       class = "navbar navbar-expand-lg navbar-static-top bg-body-white",
       role = "navigation",
@@ -76,8 +76,9 @@ ui <- function(id) {
         class = "container-fluid",
         shiny$tags$div(
           class = "navbar-header",
-          shiny$actionLink(
+          shiny$tags$a(
             inputId = ns("biodt_logo"),
+            href = route_link("/"),
             shiny$img(
               src = "static/logo.svg",
               height = "70px",
@@ -94,7 +95,7 @@ ui <- function(id) {
               class="nav-item dropdown",
               shiny::a(
                 shiny$icon("people-group", `aria-hidden` = "true"),
-                shiny$tags$strong(i18n$translate("Digital Twin")),
+                i18n$translate("Digital Twin"),
                 class="nav-link dropdown-toggle",
                 href="#",
                 role="button",
@@ -118,6 +119,19 @@ ui <- function(id) {
                   class="dropdown-item",
                   shiny::a(i18n$translate("Cultural Ecosystem Services"), href = route_link("ces")),
                 ),
+                if (env_active == "dev") {
+                  shiny$tags$div(
+                    class = "dropdown-item p-2",
+                    shiny$icon("vial-virus", `aria-hidden` = "true"),
+                    shiny$tags$strong(i18n$translate("Genetically detected biodiversity"))
+                  )
+                },
+                if (env_active == "dev") {
+                  shiny$tags$li(
+                    class="dropdown-item",
+                    shiny::a(i18n$translate("Crop Wild Relatives"), href = route_link("cwr")),
+                  )
+                },
                 shiny$tags$li(
                   class="dropdown-item",
                   shiny::a(i18n$translate("Honeybee"), href = route_link("honeybee")),
@@ -129,18 +143,19 @@ ui <- function(id) {
           shiny$tags$ul(
             class="navbar-nav mr-1 mb-2 mb-lg-0",
             shiny$tags$li(
-              class="nav-item",
+              class = "nav-item",
+              shiny$icon("users-gear", `aria-hidden` = "true"),
               shiny::a("Acknowledgements", class = "nav-link", href = route_link("acknowledgements")),
             ),
             if (env_active == "dev") {                  
-             shiny$tags$li(
-              class="dropdown-item",
-              shiny$selectInput(
-                ns("selected_language"),
-                shiny$span(), # shiny$p(i18n$translate("Language:")),
-                choices = i18n$get_languages(),
-                selected = i18n$get_key_translation(),
-                width = "75px"
+              shiny$tags$li(
+                class="dropdown-item",
+                shiny$selectInput(
+                  ns("selected_language"),
+                  shiny$span(),
+                  choices = i18n$get_languages(),
+                  selected = i18n$get_key_translation(),
+                  width = "75px"
                 )
               )
             }
@@ -191,7 +206,7 @@ ui <- function(id) {
     #         shiny$tags$div(
     #           class = "p-2",
     #           shiny$icon("temperature-arrow-up"),
-    #           shiny$tags$strong(i18n$translate("Species response to environmental change"))
+    #           shiny$tags$strong(i18n$translate("Genetically detected biodiversity"))
     #         )
     #       )
     #     },
@@ -244,8 +259,8 @@ ui <- function(id) {
     #       shiny$bookmarkButton()
     #     )
     #   },
-    #   if (env_active == "dev") {
-    #     nav_item(
+    #  if (env_active == "dev") {
+    #      nav_item(
     #       shiny$selectInput(
     #         ns("selected_language"),
     #         shiny$span(), # shiny$p(i18n$translate("Language:")),
@@ -253,12 +268,16 @@ ui <- function(id) {
     #         selected = i18n$get_key_translation(),
     #         width = "75px"
     #       )
-    #     )
+    #      )
     #   }
     #),
     # Router UIs----
     router_ui(
-      route("/", mod_info_ui(ns("info"), i18n)),
+      route("/", mod_info_ui(
+          ns("info"),
+          i18n
+        )
+      ),
       route("grassland", grassland_main_ui(
           ns("grassland_main"),
           i18n
@@ -274,8 +293,14 @@ ui <- function(id) {
           i18n
         )
       ),
-      route("acknowledgements",
-        mod_acknowledgements_ui("info")
+      route("cwr", mod_cwr_ui(
+          ns("cwr_main"),
+          i18n
+        )
+      ),
+      route("acknowledgements", mod_acknowledgements_ui(
+          ns("acknowledgements_page")
+        )
       ),
       page_404 = page404_ui(ns("page404"))
     )
