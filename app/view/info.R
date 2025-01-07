@@ -1,6 +1,7 @@
 box::use(
   shiny[NS, fillPage, div, p, moduleServer, tags, h1, fluidRow, observeEvent, actionLink],
   bslib[card, card_header, card_body, bs_theme, nav_select],
+  shiny.router[route_link],
 )
 
 box::use(app / view / honeybee / honeybee_main[honeybee_ui, honeybee_server], )
@@ -70,11 +71,8 @@ mod_info_ui <- function(id, i18n) {
               class = "views-element-container",
               tags$ul(
                 tags$li(
-                    actionLink(
-                      class = "w-100",
-                      inputId = ns("grassland_selector"),
-                      i18n$translate("Grassland Biodiversity Dynamics")
-                    )
+                  class = "w-100",
+                  tags$a(i18n$translate("Grassland Biodiversity Dynamics"), href = route_link("grassland"))
                 ),
                 tags$li(
                   class = "w-100",
@@ -85,11 +83,8 @@ mod_info_ui <- function(id, i18n) {
                   i18n$translate("Real-time Bird Monitoring with Citizen Science Data")
                 ),
                 tags$li(
-                  actionLink(
-                    class = "w-100",
-                    inputId = ns("ces_selector"),
-                    label = i18n$translate("Cultural Ecosystem Services")
-                  )
+                  class = "w-100",
+                  tags$a(i18n$translate("Cultural Ecosystem Services"), href = route_link("ces"))
                 )
               )
             )
@@ -120,8 +115,8 @@ mod_info_ui <- function(id, i18n) {
               class = "views-element-container",
               tags$ul(
                 tags$li(
-                  class = "w-100",
-                  i18n$translate("Crop Wild Relatives and Genetic Resources for Food Security")
+                  class = "w-100",                  
+                  tags$a(i18n$translate("Crop Wild Relatives and Genetic Resources for Food Security"), href = route_link("cwr"))
                 ),
                 tags$li(
                   class = "w-100",
@@ -192,15 +187,11 @@ mod_info_ui <- function(id, i18n) {
               class = "views-element-container",
               tags$ul(
                 tags$li(
-                  actionLink(
-                    class = "w-100",
-                    inputId = ns("honeybee_selector"),
-                    label = i18n$translate("Pollinators (Honeybee)")
-                  )
+                  tags$a(i18n$translate("Pollinators (Honeybee)"), href = route_link("honeybee"))
                 ),
                 tags$li(
                   class = "w-100",
-                  i18n$translate("Disease Outbreaks")
+                  tags$a(i18n$translate("Disease Outbreaks"), href = route_link("disease_outbreaks"))
                 )
               )
             )
@@ -215,37 +206,5 @@ mod_info_ui <- function(id, i18n) {
 mod_info_server <- function(id, r, main_session) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
-
-    observeEvent(input$honeybee_selector, {
-      print("actionlink selected")
-      nav_select("navbar",
-        selected = "Honeybee",
-        session = main_session
-      )
-      nav_select("honeybee_main-tab",
-        selected = "Beekeeper",
-        session = main_session
-      )
-    })
-
-    observeEvent(input$grassland_selector, {
-      print("actionlink 'Grassland' selected")
-      nav_select("navbar",
-        selected = "Grassland",
-        session = main_session
-      )
-    })
-
-    observeEvent(input$ces_selector, {
-      print("actionlink selected")
-      nav_select("navbar",
-        selected = "CES",
-        session = main_session
-      )
-      nav_select("ces_main-tab",
-        selected = "Info",
-        session = main_session
-      )
-    })
   })
 }
