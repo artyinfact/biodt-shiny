@@ -71,7 +71,7 @@ ui <- function(id) {
     # Body ----
     # Main navigation ----
     shiny$tags$nav(
-      class = "navbar navbar-expand-lg navbar-static-top bg-body-white",
+      class = "navbar navbar-static-top bg-body-white",
       role = "navigation",
       shiny$tags$div(
         class = "container-fluid",
@@ -265,6 +265,7 @@ server <- function(id) {
     # Grassland pDT server ----
     grassland_main_server(
       "grassland_main"
+      # router_server
     )
     # CES pDT server ----
     ces_server(

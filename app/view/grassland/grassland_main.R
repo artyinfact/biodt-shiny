@@ -1,6 +1,7 @@
 box::use(
-  shiny[moduleServer, icon, NS],
+  shiny[moduleServer, icon, NS, tagList, tags],
   bslib[navset_tab, nav_panel],
+  shiny.router[router_ui, route, route_link],
 )
 
 box::use(
@@ -14,25 +15,27 @@ box::use(
 #' @export
 grassland_main_ui <- function(id, i18n) {
   ns <- NS(id)
-  navset_tab(
-    # Info Page ---
-    nav_panel(
-      title = "Info",
-      value = "Info",
-      icon = icon("circle-info"),
-      grassland_info_ui(
-        ns("grassland_info"),
-        i18n
-      )
-    ),
-    # Grassland Case ----
-    nav_panel(
-      title = i18n$translate("Grassland Dynamics"),
-      value = "Grassland Dynamics",
-      icon = icon("leaf"),
-      grassland_dynamics_ui(
-        ns("grassland_app"),
-        i18n
+
+  tagList(
+    tags$ul(
+      inputId = "app-disease_outbreaks_main-tab",
+      class = "nav nav-tabs",
+      tags$li(
+        class = "nav-item",
+        tags$a("Info", href = route_link("grassland"))
+      ),
+      tags$li(
+        class = "nav-item",
+        tags$a(i18n$translate("Grassland Dynamics"), href = route_link("grasslandpdt")
+        )
+      ),
+    
+      router_ui(
+        route("grasslandpdt", grassland_dynamics_ui(
+            ns("grassland_app"),
+            i18n
+          )
+        )
       )
     )
   )
@@ -40,8 +43,8 @@ grassland_main_ui <- function(id, i18n) {
 
 #' @export
 grassland_main_server <- function(id) {
-  moduleServer(id, function(input, output, session) {
-    ns <- session$ns
+  moduleServer(id, function(input, output, session) {    
+    ns <- session$ns    
 
     grassland_dynamics_server("grassland_app")
   })
