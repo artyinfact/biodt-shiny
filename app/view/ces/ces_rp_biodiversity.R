@@ -41,7 +41,7 @@ ces_rp_biodiversity_ui <- function(id) {
           full_screen = FALSE,
           card_title("Recreation & Biodiversity Mapping"),
           card_body(
-            leafletOutput(ns("combined_map_plot"), height = 800, width = "100%"),
+            leafletOutput(ns("combined_map_plot"), height = 1200, width = "100%"),
             tags$div(
               class = "button-container",
               actionButton(ns("toggleSliders"), HTML('<i class="fa-solid fa-person-hiking"></i>'), class = "toggle-button", title = "Hiker Settings"),
@@ -112,6 +112,11 @@ ces_rp_biodiversity_ui <- function(id) {
                       `size` = 5,
                       `dropdownAlignRight` = FALSE
                     )
+                  ),
+                  actionButton(
+                    ns("clear_species_selector"),
+                    label = "Clear all selected species",
+                    class = "btn-primary"
                   ),
                   tags$h4("Species Occurrence", class = "mt-3"),
                   sliderTextInput(
@@ -331,6 +336,15 @@ ces_rp_biodiversity_server <- function(id, ces_selected) {
       )
     })
 
+    observeEvent(input$clear_species_selector, ignoreInit = TRUE, {
+      print("Clearing all selected species.")
+      updatePickerInput(
+        session,
+        "species_selector",
+        selected = NULL,
+        choices = species_choices()
+      )
+    })
 
     # Helper function to update species layer
     updateSpeciesLayer <- function() {
