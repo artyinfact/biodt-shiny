@@ -49,8 +49,8 @@
 
 /* Date slider container - ensures adequate space */
 .rtbm-container .date-slider-container {
-  margin-top: 15px;
-  min-height: 60px;
+  margin: 15px 0 25px 0; /* Add more bottom margin */
+  min-height: 80px; /* Increase minimum height */
 }
 
 /* Map container */
@@ -229,6 +229,58 @@
   animation: pulse-marker 1.5s infinite;
 }
 
+/* Date range input fields - set minimum width */
+.rtbm-container .dateRangeInput .input-sm {
+  min-width: 110px;  /* Ensure date is fully visible */
+}
+
+/* Date slider enhancements for better readability */
+.rtbm-container .js-irs-0 .irs-grid-text {
+  font-size: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 40px;  /* Limit width of individual date labels */
+}
+
+/* Hide most dates on the slider for all screen sizes */
+.rtbm-container .js-irs-0 .irs-grid-text {
+  visibility: hidden; /* Hide all by default */
+}
+
+/* Only show every 5th date for better spacing */
+.rtbm-container .js-irs-0 .irs-grid-text:nth-child(5n+1) {
+  visibility: visible; /* Show only every 5th date */
+}
+
+/* Always show first and last dates */
+.rtbm-container .js-irs-0 .irs-grid-text:first-child,
+.rtbm-container .js-irs-0 .irs-grid-text:last-child {
+  visibility: visible;
+}
+
+/* For very small screens, further reduce visible dates */
+@media (max-width: 576px) {
+  /* On very small screens, only show first, middle and last */
+  .rtbm-container .js-irs-0 .irs-grid-text {
+    visibility: hidden;
+  }
+  
+  .rtbm-container .js-irs-0 .irs-grid-text:first-child,
+  .rtbm-container .js-irs-0 .irs-grid-text:nth-child(15),
+  .rtbm-container .js-irs-0 .irs-grid-text:last-child {
+    visibility: visible;
+  }
+  
+  /* Make the visible dates more noticeable */
+  .rtbm-container .js-irs-0 .irs-grid-text:first-child,
+  .rtbm-container .js-irs-0 .irs-grid-text:nth-child(15),
+  .rtbm-container .js-irs-0 .irs-grid-text:last-child {
+    font-weight: bold;
+    font-size: 11px;
+  }
+}
+
 /* Media queries for responsive design */
 @media (max-width: 767.98px) {
   .rtbm-container .sidebar-column {
@@ -238,5 +290,19 @@
   .rtbm-container .control-panel {
     max-height: 500px;
     overflow-y: auto;
+  }
+  
+  /* Make the date range inputs stack vertically on very small screens */
+  .rtbm-container .form-group .input-daterange {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  /* Improve the date range separator appearance */
+  .rtbm-container .input-daterange .input-group-addon {
+    width: 100%;
+    text-align: center;
+    padding: 4px 0;
   }
 }

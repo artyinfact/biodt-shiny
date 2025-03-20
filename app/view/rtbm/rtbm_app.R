@@ -58,7 +58,7 @@ box::use(
   viridisLite[magma, inferno],
 
   # JavaScript interface
-  htmlwidgets
+  htmlwidgets,
 )
 
 #' Load and prepare bird species information
@@ -87,7 +87,7 @@ species_choices <- bird_spp_info$common_name
 
 #' Calculate seconds until midnight for cache refresh
 #' @noRd
-calculate_seconds_until_midnight <- function() {
+calc_secd_til_midnight <- function() {
   current_time <- Sys.time()
   midnight <- as.POSIXct(format(current_time + 86400, "%Y-%m-%d 00:00:00"))
   as.numeric(difftime(midnight, current_time, units = "secs"))
@@ -301,17 +301,63 @@ rtbm_app_server <- function(id, tab_selected) {
         return(NULL)
       }
 
-      tagList(
-        sliderTextInput(
-          inputId = ns("date_slider"),
-          label = "Select Date:",
-          choices = format(dates, "%Y-%m-%d"),
-          selected = format(dates[1], "%Y-%m-%d"),
-          grid = TRUE,
-          animate = FALSE,
-          width = "100%"
-        ),
+      # Get the number of dates to determine display format
+      num_dates <- length(dates)
 
+      # Always use the same format for the values (YYYY-MM-DD)
+      # This prevents parsing issues elsewhere in the code
+      date_values <- format(dates, "%Y-%m-%d")
+
+      # Format labels based on screen size and number of dates
+      # For small screens or many dates, use a highly abbreviated format
+      date_labels <- if (num_dates > 10) {
+        # For many dates, use the month-day format
+        format(dates, "%m-%d")
+      } else {
+        # For fewer dates, use the full format
+        format(dates, "%Y-%m-%d")
+      }
+
+      # Create named vector where names are display labels and values are full dates
+      names(date_values) <- date_labels
+
+      # Ensure first date is selected
+      initial_date <- date_values[1]
+
+      # For many dates, limit the number of values shown
+      # This helps reduce visual clutter on small screens
+      if (num_dates > 20) {
+        # If we have many dates, sample a subset for display
+        # but always include first and last dates
+        sample_indices <- unique(c(
+          1, # First date
+          sort(sample(2:(num_dates - 1), min(8, num_dates - 2))), # Sampled middle dates
+          num_dates # Last date
+        ))
+
+        # Only show these sampled dates - this reduces visual clutter
+        # Full dates are still accessible via slider movement
+        date_values <- date_values[sample_indices]
+      }
+
+      tagList(
+        div(
+          class = "date-slider-container",
+          # Add clearer heading for the slider
+          p(class = "mb-1", "Select Date:"),
+          # Use sliderTextInput with improved formatting
+          sliderTextInput(
+            inputId = ns("date_slider"),
+            label = NULL, # Remove default label since we added our own
+            choices = date_values,
+            selected = initial_date,
+            grid = TRUE,
+            force_edges = TRUE,
+            hide_min_max = FALSE,
+            animate = FALSE,
+            width = "100%"
+          )
+        ),
         # Animation controls - only shown after data is loaded
         div(
           class = "animation-controls mt-3",
@@ -363,20 +409,30 @@ rtbm_app_server <- function(id, tab_selected) {
       # Only run when animation is active
       req(animation_active())
       req(available_dates())
+      req(input$date_slider)
 
       # Get dates and current index
-      dates <- available_dates()
-      current_idx <- which(format(dates, "%Y-%m-%d") == input$date_slider)
+      all_dates <- available_dates()
+      all_date_values <- format(all_dates, "%Y-%m-%d")
 
-      # Move to next date (or cycle back to beginning)
-      next_idx <- if (current_idx < length(dates)) current_idx + 1 else 1
-      next_date <- dates[next_idx]
+      # Find the full index from all available dates
+      current_idx <- which(all_date_values == input$date_slider)
+
+      # Check if current index is valid (might be empty if date not found)
+      if (length(current_idx) == 0) {
+        # If current date not found, start from the beginning
+        current_idx <- 1
+      }
+
+      # Move to next date in the full dataset (or cycle back to beginning)
+      next_idx <- if (current_idx < length(all_dates)) current_idx + 1 else 1
+      next_date <- all_date_values[next_idx]
 
       # Update the date slider input (which will trigger map update)
       updateSliderTextInput(
         session = session,
         inputId = "date_slider",
-        selected = format(next_date, "%Y-%m-%d")
+        selected = next_date
       )
 
       # Fixed delay of 1 second between animations
@@ -385,15 +441,26 @@ rtbm_app_server <- function(id, tab_selected) {
 
     # Handle manual date slider change
     observeEvent(input$date_slider, {
-      req(available_dates())
+      req(input$date_slider, frames_data())
+      frames <- frames_data()
+
+      if (length(frames) == 0) {
+        return()
+      }
+
+      # No need to parse the date - slider value is already in YYYY-MM-DD format
       selected_date_str <- input$date_slider
-      selected_date <- as_date(selected_date_str)
 
-      dates <- available_dates()
-      new_frame <- which(format(dates, "%Y-%m-%d") == selected_date_str)
+      # Find the frame index for the selected date
+      frame_index <- which(names(frames) == selected_date_str)
 
-      if (length(new_frame) > 0 && new_frame > 0) {
-        updateMapWithFrame(new_frame)
+      if (length(frame_index) == 1) {
+        # Update current_frame and current_date
+        current_frame(frame_index)
+        current_date(as.Date(selected_date_str))
+
+        # Update the map
+        update_map_with_frame(frame_index)
       }
     })
 
@@ -401,20 +468,22 @@ rtbm_app_server <- function(id, tab_selected) {
     observeEvent(input$date_slider, {
       req(input$date_slider, frames_data())
       frames <- frames_data()
-      
-      if (length(frames) == 0) return()
-      
+
+      if (length(frames) == 0) {
+        return()
+      }
+
       # Find the frame index for the selected date
       selected_date_str <- input$date_slider
       frame_index <- which(names(frames) == selected_date_str)
-      
+
       if (length(frame_index) == 1) {
         # Update current_frame and current_date
         current_frame(frame_index)
         current_date(as.Date(selected_date_str))
-        
+
         # Update the map
-        updateMapWithFrame(frame_index)
+        update_map_with_frame(frame_index)
       }
     })
 
@@ -499,7 +568,7 @@ rtbm_app_server <- function(id, tab_selected) {
       # Generate all dates in the range
       all_dates <- seq(from = date_range[1], to = date_range[2], by = "day")
       result_list <- list()
-      
+
       # Show loading message
       output$statusMsg <- renderUI({
         div(
@@ -517,13 +586,13 @@ rtbm_app_server <- function(id, tab_selected) {
           for (i in seq_along(all_dates)) {
             date <- all_dates[i]
             formatted_date <- format(date, "%Y-%m-%d")
-            
+
             # Update progress
             incProgress(
-              1/length(all_dates), 
+              1 / length(all_dates),
               detail = paste("Processing", formatted_date)
             )
-            
+
             # Build URL for the tif file
             url_tif <- paste0(
               "https://2007581-webportal.a3s.fi/daily/",
@@ -531,31 +600,31 @@ rtbm_app_server <- function(id, tab_selected) {
               scientific,
               "_occurrences.tif"
             )
-            
+
             # Try to download and process
             tryCatch(
               {
                 # Check if file exists
                 resp <- request(url_tif) |> req_perform()
                 if (resp$status != 200) next
-                
+
                 # Download the file
                 tmp_file <- tempfile(fileext = ".tif")
                 download_result <- download.file(url_tif, tmp_file, mode = "wb", quiet = TRUE)
-                
+
                 if (download_result != 0 || !file.exists(tmp_file) || file.size(tmp_file) == 0) {
                   next
                 }
-                
+
                 # Process the raster
                 r <- terra::rast(tmp_file)
                 r[r == 0] <- NA
-                
+
                 # Check for invalid data
                 if (any(terra::values(r) == -1, na.rm = TRUE)) {
                   next
                 }
-                
+
                 # Add to results
                 result_list[[formatted_date]] <- r
               },
@@ -566,7 +635,7 @@ rtbm_app_server <- function(id, tab_selected) {
           }
         }
       )
-      
+
       # Update status message with results
       if (length(result_list) > 0) {
         output$statusMsg <- renderUI({
@@ -585,43 +654,43 @@ rtbm_app_server <- function(id, tab_selected) {
           )
         })
       }
-      
-      return(result_list)
+
+      result_list
     })
 
     # Reactive for batch loading data
     frames_data <- eventReactive(input$loadData, {
       req(input$dateRange, input$speciesPicker)
-      
+
       # Reset animation when loading new data
       animation_active(FALSE)
       current_frame(1)
-      
+
       # Get data for all dates in range
       data_batch <- cached_get_bird_data_batch(input$dateRange, input$speciesPicker)
-      
+
       if (length(data_batch) == 0) {
         return(list())
       }
-      
+
       # Process all loaded rasters into frames
       frames <- list()
-      
+
       for (date_str in names(data_batch)) {
         r <- data_batch[[date_str]]
-        
+
         # Convert to raster format for leaflet
         rt <- raster::raster(r)
-        
+
         # Project if needed
         crs_rt <- raster::crs(rt)
         if (!is.na(crs_rt) && sf::st_crs(crs_rt) != sf::st_crs(3857)) {
           rt <- raster::projectRaster(rt, crs = sf::st_crs(3857))
         }
-        
+
         # Get values for color scaling
         vals <- na.omit(values(rt))
-        
+
         # Create frame data
         frames[[date_str]] <- list(
           date = as.Date(date_str),
@@ -629,24 +698,24 @@ rtbm_app_server <- function(id, tab_selected) {
           values = vals
         )
       }
-      
+
       # Sort frames by date
       frame_dates <- as.Date(names(frames))
       frames <- frames[order(frame_dates)]
-      
+
       # Update available dates for slider
       available_dates(as.Date(names(frames)))
-      
+
       # Reset to first frame
       if (length(frames) > 0) {
         current_date(available_dates()[1])
       }
-      
+
       return(frames)
     })
 
     # Function to process and update map with a specific frame
-    updateMapWithFrame <- function(frame_index) {
+    update_map_with_frame <- function(frame_index) {
       frames <- frames_data()
 
       # Check if frames data exists and frame index is valid
@@ -732,7 +801,7 @@ rtbm_app_server <- function(id, tab_selected) {
       # Only add the legend once when data is first loaded
       if (!legend_added()) {
         # Create info card with species info (only once)
-        info_card_components <- isolate(createInfoCard())
+        info_card_components <- isolate(create_info_card())
         info_card_html <- div(
           class = "leaflet-info-card",
           style = paste(
@@ -775,7 +844,7 @@ rtbm_app_server <- function(id, tab_selected) {
     }
 
     # Create the info card with species details
-    createInfoCard <- function() {
+    create_info_card <- function() {
       list(
         # Photo section
         if (!is.null(photo_url())) {
@@ -893,7 +962,7 @@ rtbm_app_server <- function(id, tab_selected) {
     observeEvent(input$loadData, {
       raster_data <- frames_data()
       if (length(raster_data) > 0) {
-        updateMapWithFrame(1)
+        update_map_with_frame(1)
       }
     })
 
