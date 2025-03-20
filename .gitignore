@@ -33,6 +33,7 @@ renv
 # Data for pDTs
 local_data
 app/data
+app/__MACOSX
 shared
 # Testing script
 test.R
