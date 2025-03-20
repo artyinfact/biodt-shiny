@@ -12,7 +12,7 @@ box::use(
     reactive, req, renderUI, eventReactive,
     invalidateLater, reactiveVal, sliderInput,
     icon, textOutput, renderText, isTruthy,
-    selectInput, isolate
+    selectInput, isolate, withProgress, incProgress
   ],
 
   # UI enhancement
@@ -145,7 +145,7 @@ rtbm_app_ui <- function(id, i18n) {
               label = "Select Date Range",
               start = Sys.Date() - 30,
               end = Sys.Date(),
-              min = "2010-01-01",
+              min = "2025-01-16",
               max = Sys.Date(),
               format = "yyyy-mm-dd",
               startview = "month",
@@ -232,12 +232,7 @@ rtbm_app_server <- function(id, tab_selected) {
     # Reactive values for data storage
     available_dates <- reactiveVal(NULL)
     frames_data <- reactiveVal(list())
-    current_date <- reactive({
-      req(input$date_slider, available_dates())
-      selected_date_str <- input$date_slider
-      selected_date <- as_date(selected_date_str)
-      return(selected_date)
-    })
+    current_date <- reactiveVal(NULL)
     current_frame <- reactiveVal(1)
 
     # Animation controls
@@ -402,6 +397,27 @@ rtbm_app_server <- function(id, tab_selected) {
       }
     })
 
+    # Observe date slider changes and update map
+    observeEvent(input$date_slider, {
+      req(input$date_slider, frames_data())
+      frames <- frames_data()
+      
+      if (length(frames) == 0) return()
+      
+      # Find the frame index for the selected date
+      selected_date_str <- input$date_slider
+      frame_index <- which(names(frames) == selected_date_str)
+      
+      if (length(frame_index) == 1) {
+        # Update current_frame and current_date
+        current_frame(frame_index)
+        current_date(as.Date(selected_date_str))
+        
+        # Update the map
+        updateMapWithFrame(frame_index)
+      }
+    })
+
     # Get Finnish name for URL construction
     finnish_name <- reactive({
       req(input$speciesPicker)
@@ -469,87 +485,164 @@ rtbm_app_server <- function(id, tab_selected) {
       s_url
     })
 
-    # Cache bird data to prevent repeated API calls
-    cached_get_bird_data <- memoise(function(date, species) {
+    # Cache bird data to prevent repeated API calls - Modified for batch loading
+    cached_get_bird_data_batch <- memoise(function(date_range, species) {
+      req(species)
       scientific <- bird_spp_info |>
         filter(common_name == species) |>
         pull(scientific_name)
 
       if (length(scientific) == 0) {
-        return(NULL)
+        return(list())
       }
 
-      # Format date for URL
-      formatted_date <- format(date, "%Y-%m-%d")
+      # Generate all dates in the range
+      all_dates <- seq(from = date_range[1], to = date_range[2], by = "day")
+      result_list <- list()
+      
+      # Show loading message
+      output$statusMsg <- renderUI({
+        div(
+          class = "alert alert-info",
+          role = "alert",
+          paste0("Loading ", length(all_dates), " dates for ", species, "...")
+        )
+      })
 
-      # Build URL for the tif file
-      url_tif <- paste0(
-        "https://2007581-webportal.a3s.fi/daily/",
-        formatted_date, "/",
-        scientific,
-        "_occurrences.tif"
-      )
-
-      tryCatch(
+      # Process all dates in batch
+      withProgress(
+        message = "Loading bird observation data...",
+        value = 0,
         {
-          resp <- request(url_tif) |> req_perform()
-          status <- resp$status
-
-          if (status != 200) {
-            return(NULL)
+          for (i in seq_along(all_dates)) {
+            date <- all_dates[i]
+            formatted_date <- format(date, "%Y-%m-%d")
+            
+            # Update progress
+            incProgress(
+              1/length(all_dates), 
+              detail = paste("Processing", formatted_date)
+            )
+            
+            # Build URL for the tif file
+            url_tif <- paste0(
+              "https://2007581-webportal.a3s.fi/daily/",
+              formatted_date, "/",
+              scientific,
+              "_occurrences.tif"
+            )
+            
+            # Try to download and process
+            tryCatch(
+              {
+                # Check if file exists
+                resp <- request(url_tif) |> req_perform()
+                if (resp$status != 200) next
+                
+                # Download the file
+                tmp_file <- tempfile(fileext = ".tif")
+                download_result <- download.file(url_tif, tmp_file, mode = "wb", quiet = TRUE)
+                
+                if (download_result != 0 || !file.exists(tmp_file) || file.size(tmp_file) == 0) {
+                  next
+                }
+                
+                # Process the raster
+                r <- terra::rast(tmp_file)
+                r[r == 0] <- NA
+                
+                # Check for invalid data
+                if (any(terra::values(r) == -1, na.rm = TRUE)) {
+                  next
+                }
+                
+                # Add to results
+                result_list[[formatted_date]] <- r
+              },
+              error = function(e) {
+                # Skip on error and continue with other dates
+              }
+            )
           }
-
-          tmp_file <- tempfile(fileext = ".tif")
-          download_result <- download.file(url_tif, tmp_file, mode = "wb", quiet = TRUE)
-
-          if (download_result != 0 || !file.exists(tmp_file) || file.size(tmp_file) == 0) {
-            return(NULL)
-          }
-
-          r <- terra::rast(tmp_file)
-          r[r == 0] <- NA
-
-          # Check for invalid observation data (-1 values)
-          if (any(terra::values(r) == -1, na.rm = TRUE)) {
-            return(NULL) # Skip dates with invalid observation data
-          }
-
-          return(r)
-        },
-        error = function(e) {
-          return(NULL)
         }
       )
-    })
-
-    # Clear cache at midnight to get fresh data
-    observe({
-      invalidateLater(calculate_seconds_until_midnight())
-      forget(cached_get_bird_data)
-    })
-
-    # Calculate global min/max values for legend scale
-    global_min_max <- reactive({
-      req(frames_data())
-      frames <- frames_data()
-      if (length(frames) == 0) {
-        return(c(0, 1))
+      
+      # Update status message with results
+      if (length(result_list) > 0) {
+        output$statusMsg <- renderUI({
+          div(
+            class = "alert alert-success",
+            role = "alert",
+            paste0("Successfully loaded data for ", length(result_list), " dates.")
+          )
+        })
+      } else {
+        output$statusMsg <- renderUI({
+          div(
+            class = "alert alert-warning",
+            role = "alert",
+            "No data found for the selected date range and species."
+          )
+        })
       }
+      
+      return(result_list)
+    })
 
-      # Collect all values across all frames
-      all_values <- numeric(0)
-      for (frame in frames) {
-        if (!is.null(frame$values) && length(frame$values) > 0) {
-          all_values <- c(all_values, frame$values)
+    # Reactive for batch loading data
+    frames_data <- eventReactive(input$loadData, {
+      req(input$dateRange, input$speciesPicker)
+      
+      # Reset animation when loading new data
+      animation_active(FALSE)
+      current_frame(1)
+      
+      # Get data for all dates in range
+      data_batch <- cached_get_bird_data_batch(input$dateRange, input$speciesPicker)
+      
+      if (length(data_batch) == 0) {
+        return(list())
+      }
+      
+      # Process all loaded rasters into frames
+      frames <- list()
+      
+      for (date_str in names(data_batch)) {
+        r <- data_batch[[date_str]]
+        
+        # Convert to raster format for leaflet
+        rt <- raster::raster(r)
+        
+        # Project if needed
+        crs_rt <- raster::crs(rt)
+        if (!is.na(crs_rt) && sf::st_crs(crs_rt) != sf::st_crs(3857)) {
+          rt <- raster::projectRaster(rt, crs = sf::st_crs(3857))
         }
+        
+        # Get values for color scaling
+        vals <- na.omit(values(rt))
+        
+        # Create frame data
+        frames[[date_str]] <- list(
+          date = as.Date(date_str),
+          raster = rt,
+          values = vals
+        )
       }
-
-      if (length(all_values) == 0) {
-        return(c(0, 1))
+      
+      # Sort frames by date
+      frame_dates <- as.Date(names(frames))
+      frames <- frames[order(frame_dates)]
+      
+      # Update available dates for slider
+      available_dates(as.Date(names(frames)))
+      
+      # Reset to first frame
+      if (length(frames) > 0) {
+        current_date(available_dates()[1])
       }
-
-      # Return min and max values
-      c(min(all_values, na.rm = TRUE), max(all_values, na.rm = TRUE))
+      
+      return(frames)
     })
 
     # Function to process and update map with a specific frame
@@ -750,125 +843,28 @@ rtbm_app_server <- function(id, tab_selected) {
       )
     }
 
-    # Process and prepare data for all dates in the range
-    processAllDates <- function() {
-      req(date_sequence(), input$speciesPicker)
+    # Calculate global min/max values for legend scale
+    global_min_max <- reactive({
+      req(frames_data())
+      frames <- frames_data()
+      if (length(frames) == 0) {
+        return(c(0, 1))
+      }
 
-      dates <- date_sequence()
-      species <- input$speciesPicker
-
-      print(paste("Processing data for", length(dates), "dates for species:", species))
-
-      output$statusMsg <- renderUI({
-        div(
-          class = "alert alert-info",
-          role = "alert",
-          "Loading data for all dates... This may take a moment."
-        )
-      })
-
-      # Store available dates and their data
-      valid_dates <- c()
-      all_frames <- list()
-
-      for (i in seq_along(dates)) {
-        date <- dates[i]
-        print(paste("Processing date:", date))
-
-        # Get data for this date
-        r <- cached_get_bird_data(date, species)
-
-        if (!is.null(r)) {
-          print(paste("Found data for date:", date))
-          # Process raster data
-          rt <- raster::raster(r)
-          vals <- na.omit(raster::values(rt))
-
-          # Check for invalid observation data (values of -1)
-          if (length(vals) > 0 && any(vals == -1)) {
-            print(paste("Invalid observation data (value -1) found for date:", date))
-            next
-          }
-
-          if (length(vals) > 0) {
-            # Ensure proper projection
-            crs_rt <- raster::crs(rt)
-            if (!is.na(crs_rt) && !sf::st_crs(crs_rt) == sf::st_crs(3857)) {
-              rt <- raster::projectRaster(rt, crs = sf::st_crs(3857))
-              vals <- na.omit(raster::values(rt))
-            }
-
-            # Store this date and its data
-            valid_dates <- c(valid_dates, date)
-            all_frames[[length(valid_dates)]] <- list(
-              raster = rt,
-              values = vals
-            )
-            print(paste("Added frame for date:", date, "- Frame count now:", length(valid_dates)))
-          } else {
-            print(paste("No valid values for date:", date))
-          }
-        } else {
-          print(paste("No data available for date:", date))
+      # Collect all values across all frames
+      all_values <- numeric(0)
+      for (frame in frames) {
+        if (!is.null(frame$values) && length(frame$values) > 0) {
+          all_values <- c(all_values, frame$values)
         }
       }
 
-      print(paste("Total valid dates found:", length(valid_dates)))
-
-      # Update available dates and frame data
-      if (length(valid_dates) > 0) {
-        available_dates(as_date(valid_dates))
-        frames_data(all_frames)
-        print("Updated available_dates and frames_data reactiveVals")
-      } else {
-        available_dates(NULL)
-        frames_data(list())
-        print("No valid dates found, setting empty values")
+      if (length(all_values) == 0) {
+        return(c(0, 1))
       }
 
-      # Show appropriate message based on results
-      if (length(valid_dates) == 0) {
-        output$statusMsg <- renderUI({
-          div(
-            class = "alert alert-warning",
-            role = "alert",
-            paste("No observation data available for", species, "in the selected date range.")
-          )
-        })
-        return(FALSE)
-      } else {
-        output$statusMsg <- renderUI({
-          div(
-            class = "alert alert-success",
-            role = "alert",
-            paste("Data loaded successfully. Found observations for", length(valid_dates), "dates.")
-          )
-        })
-        return(TRUE)
-      }
-    }
-
-    # Changed from reactive to eventReactive to only load data when the button is clicked
-    raster_data <- eventReactive(input$loadData, {
-      # Reset flags when loading new data
-      legend_added(FALSE)
-      info_card_added(FALSE)
-
-      # Process all dates and prepare data
-      success <- processAllDates()
-      print(paste("Data processing complete. Success:", success))
-
-      if (success) {
-        # Show the first frame
-        print("Displaying first frame")
-        updateMapWithFrame(1)
-      } else {
-        # Clear the map if no data
-        print("No data available - clearing the map")
-        leafletProxy(ns("rasterMap")) |>
-          clearImages() |>
-          clearControls()
-      }
+      # Return min and max values
+      c(min(all_values, na.rm = TRUE), max(all_values, na.rm = TRUE))
     })
 
     # Base leaflet map
@@ -895,7 +891,10 @@ rtbm_app_server <- function(id, tab_selected) {
 
     # Observe button click to trigger initial data load
     observeEvent(input$loadData, {
-      raster_data()
+      raster_data <- frames_data()
+      if (length(raster_data) > 0) {
+        updateMapWithFrame(1)
+      }
     })
 
     # Track map view changes
